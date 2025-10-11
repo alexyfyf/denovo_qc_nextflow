@@ -1,0 +1,9 @@
+.nextflow/
+results/
+results_sim_rnaspades/
+slurm-*.out
+*.log
+*.gz
+*.fasta
+*.fq
+
