@@ -1,9 +1,13 @@
 .nextflow/
 results/
-results_sim_rnaspades/
+results_*/
 slurm-*.out
 *.log
 *.gz
 *.fasta
 *.fq
-
+.nextflow.log*
+test*
+pb*config
+pea*config
+sim*config
