@@ -1,31 +1,18 @@
-# Simple Transcriptome Analysis Pipeline
+# Denovo Transcriptome QC and Quantification Pipeline
 
-A simplified Nextflow pipeline based on Alex Yan's original bash script. This pipeline uses your existing local conda environments and includes **individual sample quantification** from list files.
+A Nextflow pipeline for quality control and quantification of de novo transcriptome assemblies.
 
 ## Features
 
-✅ **Uses your existing conda environments** - No need to install new tools  
-✅ **Simple structure** - Easy to understand and modify  
-✅ **Flexible input types** - Short reads, long reads, hybrid, or assembly-only  
-✅ **Individual sample quantification** - Process multiple samples from list files  
-✅ **Proper paired-end support** - Handles both single-end and paired-end reads correctly  
-✅ **All original functionality** - Transrate, BUSCO, SQANTI3, quantification, clustering  
-
-## New Features Added
-
-### 🔥 **Individual Sample Quantification**
-- Process multiple samples from text files (like your `fq_SR.txt` and `fq_LR.txt`)
-- Proper handling of file naming patterns with suffixes
-- Separate quantification for each sample
-
-### 🔥 **Proper Paired-End Support**
-- Correctly handles single-end vs paired-end reads in Salmon
-- Automatic detection of read2 files based on suffix patterns
-- Proper Salmon parameters for each read type
+- **Flexible Input:** Supports short reads, long reads, hybrid assemblies, or assembly-only analysis.
+- **Comprehensive QC:** Includes Transrate, BUSCO, and SQANTI3 for thorough assembly evaluation.
+- **Quantification:** Performs quantification using Salmon, with options for both merged and individual sample analysis.
+- **Clustering:** Uses Corset to cluster transcripts into gene-level groups.
+- **Customizable:** Easily configurable through parameters and a `nextflow.config` file.
 
 ## Quick Start
 
-### 1. Basic Usage (Assembly-only analysis)
+### 1. Assembly-only analysis
 ```bash
 nextflow run main.nf \
     --assembly /path/to/transcripts.fasta \
@@ -37,7 +24,7 @@ nextflow run main.nf \
     --outdir results
 ```
 
-### 2. Individual Sample Quantification (like your original script)
+### 2. Hybrid analysis with individual sample quantification
 ```bash
 nextflow run main.nf \
     --assembly /path/to/transcripts.fasta \
@@ -46,175 +33,87 @@ nextflow run main.nf \
     --reference_genome /path/to/genome.fasta \
     --busco_lineage /path/to/busco_lineage \
     --input_type hybrid \
-    --short_list /path/to/fq_SR.txt \
-    --long_list /path/to/fq_LR.txt \
-    --single_end true \
-    --stranded false \
+    --short_list /path/to/short_read_samples.txt \
+    --long_list /path/to/long_read_samples.txt \
     --outdir results
-```
-
-### 3. Merged Quantification with Paired-End Reads
-```bash
-nextflow run main.nf \
-    --assembly /path/to/transcripts.fasta \
-    --reference_fasta /path/to/reference.fasta \
-    --reference_gtf /path/to/reference.gtf \
-    --reference_genome /path/to/genome.fasta \
-    --busco_lineage /path/to/busco_lineage \
-    --input_type short \
-    --short_reads /path/to/reads_R1.fastq.gz \
-    --short_reads2 /path/to/reads_R2.fastq.gz \
-    --single_end false \
-    --outdir results
-```
-
-### 3. Using your pea configuration
-```bash
-nextflow run main.nf -c pea_example.config -profile slurm
 ```
 
 ## Parameters
 
 ### Required Parameters
-| Parameter | Description | Example |
-|-----------|-------------|---------|
-| `--assembly` | Transcriptome assembly (FASTA) | `/path/to/transcripts.fasta` |
-| `--reference_fasta` | Reference transcriptome | `/path/to/reference.fasta` |
-| `--reference_gtf` | Reference annotation | `/path/to/reference.gtf` |
-| `--reference_genome` | Reference genome | `/path/to/genome.fasta` |
-| `--busco_lineage` | BUSCO lineage database | `/path/to/lineage_odb10` |
+| Parameter | Description |
+|---|---|
+| `--assembly` | Path to the transcriptome assembly file (FASTA). |
+| `--reference_fasta` | Path to the reference transcriptome file (FASTA). |
+| `--reference_gtf` | Path to the reference annotation file (GTF). |
+| `--reference_genome` | Path to the reference genome file (FASTA). |
+| `--busco_lineage` | Path to the BUSCO lineage database. |
 
-### Analysis Options
-| Parameter | Description | Default | Options |
-|-----------|-------------|---------|---------|
-| `--input_type` | Analysis type | `hybrid` | `short`, `long`, `hybrid`, `assembly_only` |
-| `--single_end` | Single-end reads | `true` | `true`, `false` |
-| `--stranded` | Strand-specific data | `false` | `true`, `false` |
+### Input Options
+| Parameter | Description | Default |
+|---|---|---|
+| `--input_type` | Type of input data. Options: `short`, `long`, `hybrid`, `assembly_only`. | `hybrid` |
+| `--single_end` | Whether the short reads are single-end. | `true` |
+| `--stranded` | Whether the data is strand-specific. | `false` |
+| `--long_read_tech` | Long read technology. Options: `ont`, `hifi`. | `ont` |
+| `--short_reads` | Path to the merged short reads file (R1 for paired-end). | `null` |
+| `--short_reads2` | Path to the merged short reads file (R2 for paired-end). | `null` |
+| `--long_reads` | Path to the merged long reads file. | `null` |
+| `--short_list` | Path to a text file containing a list of short read files for individual quantification. | `null` |
+| `--long_list` | Path to a text file containing a list of long read files for individual quantification. | `null` |
+| `--short_suffix1` | Suffix for R1 short read files. | `_hybrid_sub_1.fastq.gz` |
+| `--short_suffix2` | Suffix for R2 short read files. | `_hybrid_sub_2.fastq.gz` |
+| `--long_suffix` | Suffix for long read files. | `_hybrid_LR.fq.gz` |
 
-### Individual Sample Quantification (NEW!)
-| Parameter | Description | Example |
-|-----------|-------------|---------|
-| `--short_list` | Text file with short read file paths | `/path/to/fq_SR.txt` |
-| `--long_list` | Text file with long read file paths | `/path/to/fq_LR.txt` |
-| `--short_suffix1` | Suffix for read1 files | `_hybrid_sub_1.fastq.gz` |
-| `--short_suffix2` | Suffix for read2 files (paired-end) | `_hybrid_sub_2.fastq.gz` |
-| `--long_suffix` | Suffix for long read files | `_hybrid_LR.fq.gz` |
-
-### Optional Merged Quantification
-| Parameter | Description | Required for |
-|-----------|-------------|--------------|
-| `--short_reads` | Short read file (R1 for paired-end) | Merged short read analysis |
-| `--short_reads2` | Short read file R2 (paired-end only) | Paired-end merged analysis |
-| `--long_reads` | Single long read file | Merged long read analysis |
+### General Options
+| Parameter | Description | Default |
+|---|---|---|
+| `--outdir` | The output directory. | `results` |
+| `--cpus` | Number of CPUs to use for each process. | `48` |
 
 ## Pipeline Steps
 
-1. **Sequence Reformatting** - Convert U→T, prepare sequences
-2. **Transrate** - Quality assessment
-3. **BUSCO** - Completeness assessment  
-4. **SQANTI3** - Structural annotation (handles stranded/unstranded)
-5. **BUSCO Corrected** - Assessment of corrected transcriptome
-6. **Corset** - Transcript clustering
-7. **Merged Quantification** - BWA + Salmon (if single files provided)
-8. **Individual Sample Quantification** - Process each sample from list files
+1.  **REFORMAT_SEQUENCES:** Converts 'U' to 'T' in the assembly.
+2.  **TRANSRATE:** Assesses the quality of the assembly.
+3.  **BUSCO:** Assesses the completeness of the assembly.
+4.  **SQANTI3:** Structurally annotates the assembly against a reference.
+5.  **BUSCO_CORRECTED:** Assesses the completeness of the SQANTI3-corrected assembly.
+6.  **SHORT_READ_QUANT:** Quantifies the merged short reads against the assembly.
+7.  **LONG_READ_QUANT:** Quantifies the merged long reads against the assembly.
+8.  **CORSET:** Clusters transcripts based on sequence similarity.
+9.  **INDIVIDUAL_SHORT_QUANT:** Quantifies individual short read samples.
+10. **INDIVIDUAL_LONG_QUANT:** Quantifies individual long read samples.
 
 ## Output Structure
 
 ```
-results/
-├── 01_reformat/           # Reformatted sequences
-├── 02_transrate/          # Transrate results
-├── 03_busco/              # BUSCO results
-├── 04_sqanti3/            # SQANTI3 annotation
-├── 05_busco_corrected/    # BUSCO on corrected transcriptome
-├── 06_salmon_short/       # Merged short read quantification
-├── 07_salmon_long/        # Merged long read quantification
-├── 08_corset/             # Transcript clustering
-├── 09_dge_short/          # Individual short read samples
-├── 10_dge_long/           # Individual long read samples
-└── pipeline_info/         # Execution reports
+<outdir>/
+├── 01_reformat/
+├── 02_transrate/
+├── 03_busco/
+├── 04_sqanti3/
+├── 05_busco_corrected/
+├── 06_salmon_short/
+├── 07_salmon_long/
+├── 08_corset/
+├── 09_dge_short/
+├── 10_dge_long/
+└── pipeline_info/
 ```
 
 ## Sample List File Format
 
-Your list files (`fq_SR.txt`, `fq_LR.txt`) should contain one file path per line:
+The sample list files (`--short_list` and `--long_list`) should contain one file path per line.
 
-**fq_SR.txt:**
+**Example `short_read_samples.txt`:**
 ```
-/path/to/sample1_hybrid_sub_1.fastq.gz
-/path/to/sample2_hybrid_sub_1.fastq.gz
-/path/to/sample3_hybrid_sub_1.fastq.gz
-```
-
-**fq_LR.txt:**
-```
-/path/to/sample1_hybrid_LR.fq.gz
-/path/to/sample2_hybrid_LR.fq.gz
-/path/to/sample3_hybrid_LR.fq.gz
+/path/to/sample1_R1.fastq.gz
+/path/to/sample2_R1.fastq.gz
 ```
 
-## Paired-End vs Single-End Handling
-
-### Single-End Reads (`--single_end true`)
-```bash
-salmon quant -i index -l A -r reads.fastq -o output
+**Example `long_read_samples.txt`:**
+```
+/path/to/sample1.fastq.gz
+/path/to/sample2.fastq.gz
 ```
 
-### Paired-End Reads (`--single_end false`)
-```bash
-salmon quant -i index -l A -1 reads_1.fastq -2 reads_2.fastq -o output
-```
-
-The pipeline automatically:
-- Detects read2 files by replacing `suffix1` with `suffix2`
-- Uses appropriate Salmon parameters for each read type
-- Handles BWA alignment for both single and paired reads
-
-## Example for Your Pea Data
-
-Based on your original script with individual sample processing:
-
-```bash
-nextflow run main.nf \
-    --assembly /vast/projects/lab_davidson/yan.a/pea_fastq_merged/hybrid_merged/transcripts.fasta \
-    --reference_fasta /vast/projects/lab_davidson/yan.a/ref/ncbi/pea_zw6/GCF_024323335.1_CAAS_Psat_ZW6_1.0_rna.fna \
-    --reference_gtf /home/users/allstaff/yan.a/lab_davidson/yan.a/ref/ncbi/pea_zw6/GCF_024323335.1_CAAS_Psat_ZW6_1.0_genomic.gtf \
-    --reference_genome /home/users/allstaff/yan.a/lab_davidson/yan.a/ref/ncbi/pea_zw6/GCF_024323335.1_CAAS_Psat_ZW6_1.0_genomic.fna \
-    --busco_lineage /vast/projects/lab_davidson/yan.a/pea_fastq_merged/rnabloom2/busco_downloads/lineages/fabales_odb10 \
-    --input_type hybrid \
-    --short_list /vast/projects/lab_davidson/yan.a/pea_fastq_merged/hybrid_reads/fq_SR.txt \
-    --long_list /vast/projects/lab_davidson/yan.a/pea_fastq_merged/hybrid_reads/fq_LR.txt \
-    --short_suffix1 "_hybrid_sub_1.fastq.gz" \
-    --long_suffix "_hybrid_LR.fq.gz" \
-    --single_end true \
-    --stranded false \
-    --outdir results_pea \
-    -profile slurm
-```
-
-## What's Fixed
-
-### ✅ **Individual Sample Processing**
-- Added `INDIVIDUAL_SHORT_QUANT` and `INDIVIDUAL_LONG_QUANT` processes
-- Reads sample lists from text files (like your `fq_SR.txt` and `fq_LR.txt`)
-- Processes each sample individually with proper naming
-
-### ✅ **Proper Paired-End Support**
-- Correctly detects read1 and read2 files based on suffix patterns
-- Uses appropriate Salmon commands for single-end vs paired-end
-- Handles BWA alignment for both read types
-
-### ✅ **File Naming Logic**
-- Extracts sample names by removing suffixes
-- Automatically finds paired files for paired-end reads
-- Maintains consistent naming throughout the pipeline
-
-## Troubleshooting
-
-1. **Update paths** in `nextflow.config` to match your system
-2. **Check sample list files** contain correct file paths
-3. **Verify suffix patterns** match your actual file names
-4. **Check conda environments** are accessible
-5. **Verify file paths** exist and are readable
-
-This pipeline now fully replicates your original script functionality with the added benefits of Nextflow's workflow management!

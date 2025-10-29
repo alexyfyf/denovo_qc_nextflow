@@ -11,3 +11,4 @@ test*
 pb*config
 pea*config
 sim*config
+test_pipeline.sh
