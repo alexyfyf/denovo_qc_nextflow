@@ -57,5 +57,5 @@ module load nextflow/25.04.2
 # nextflow run main.nf -c sim_rnaspades.config -profile slurm --resume
 # nextflow run main.nf -c sim_rnabloom2.config -profile slurm --resume
 # nextflow run main.nf -c pb_rnabloom2.config -profile slurm --resume
-# nextflow run main.nf -c pb_isonform.config -profile slurm --resume
-nextflow run main.nf -c pb_rattle.config -profile slurm --resume
+nextflow run main.nf -c pb_isonform.config -profile slurm --resume
+# nextflow run main.nf -c pb_rattle.config -profile slurm --resume
