@@ -13,7 +13,7 @@ A Nextflow pipeline for quality control and quantification of de novo transcript
 ## Quick Start
 
 ### 1. Assembly-only analysis
-This mode runs only the QC steps on the provided assembly.
+This mode runs only the QC steps on the provided assembly (no read quantification inputs provided).
 ```bash
 nextflow run main.nf \
     --assembly /path/to/transcripts.fasta \
@@ -21,7 +21,7 @@ nextflow run main.nf \
     --reference_gtf /path/to/reference.gtf \
     --reference_genome /path/to/genome.fasta \
     --busco_lineage /path/to/busco_lineage \
-    --input_type assembly_only \
+    --input_type hybrid \
     --outdir results
 ```
 
@@ -40,21 +40,83 @@ nextflow run main.nf \
     --outdir results
 ```
 
+## Download Example FASTA Files (Zenodo)
+
+Example FASTA files are available from Zenodo record [17538009](https://zenodo.org/records/17538009).
+
+### Option 1: Download manually
+1. Open [https://zenodo.org/records/17538009](https://zenodo.org/records/17538009)
+2. Download the `.tar.gz` archive from the **Files** section.
+
+### Option 2: Download with command line
+The example FASTA files are packaged in a single `.tar.gz` archive on Zenodo.
+
+```bash
+# Optional: inspect files available in the record
+curl -s https://zenodo.org/api/records/17538009 | jq -r '.files[] | .key'
+
+# Download the tar.gz archive (replace <archive_name.tar.gz> with the actual filename)
+wget "https://zenodo.org/records/17538009/files/<archive_name.tar.gz>?download=1" -O <archive_name.tar.gz>
+
+# Extract FASTA files
+tar -xzf <archive_name.tar.gz>
+```
+
+After extraction, use the local FASTA path for the `--assembly` parameter.
+
+## Download Reference Files
+
+For human runs, use a single GENCODE release for `--reference_fasta`, `--reference_gtf`, and `--reference_genome` so sequence names stay consistent.
+
+### 1. Reference transcript FASTA (`--reference_fasta`)
+- Source: [GENCODE Human releases](https://www.gencodegenes.org/human/)
+- Typical filename: `gencode.v<RELEASE>.transcripts.fa.gz`
+
+### 2. Reference annotation GTF (`--reference_gtf`)
+- Source: [GENCODE Human releases](https://www.gencodegenes.org/human/)
+- Typical filename: `gencode.v<RELEASE>.annotation.gtf.gz`
+
+### 3. Reference genome FASTA (`--reference_genome`, GRCh38)
+- Source: [GENCODE Human releases](https://www.gencodegenes.org/human/)
+- Typical filename: `GRCh38.primary_assembly.genome.fa.gz` (or `GRCh38.p14.genome.fa.gz` for full assembly files in newer releases)
+
+### 4. BUSCO lineage dataset (`--busco_lineage`)
+- Source: [BUSCO user guide](https://busco.ezlab.org/busco_userguide)
+- List datasets:
+```bash
+busco --list-datasets
+```
+- Download a lineage dataset:
+```bash
+busco --download primates_odb10 --download_path busco_downloads
+```
+- Use it in this pipeline as:
+  - `--busco_lineage busco_downloads/lineages/primates_odb10`
+
+### Example download commands (GENCODE FTP pattern)
+Replace `<RELEASE>` with your chosen release number (for example, `47`):
+
+```bash
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_<RELEASE>/gencode.v<RELEASE>.transcripts.fa.gz
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_<RELEASE>/gencode.v<RELEASE>.annotation.gtf.gz
+wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_<RELEASE>/GRCh38.primary_assembly.genome.fa.gz
+```
+
 ## Parameters
 
 ### Required Parameters
-| Parameter | Description |
-|---|---|
-| `--assembly` | Path to the transcriptome assembly file (FASTA). |
-| `--reference_fasta` | Path to the reference transcriptome file (FASTA). |
-| `--reference_gtf` | Path to the reference annotation file (GTF). |
-| `--reference_genome` | Path to the reference genome file (FASTA). |
-| `--busco_lineage` | Path to the BUSCO lineage database. |
+| Parameter | Description | Example |
+|---|---|---|
+| `--assembly` | Path to the transcriptome assembly file (FASTA). | `/path/to/zenodo_extracted/example_assembly.fasta` |
+| `--reference_fasta` | Path to the reference transcriptome file (FASTA). | `gencode.v47.transcripts.fa.gz` |
+| `--reference_gtf` | Path to the reference annotation file (GTF). | `gencode.v47.annotation.gtf.gz` |
+| `--reference_genome` | Path to the reference genome file (FASTA). | `GRCh38.primary_assembly.genome.fa.gz` |
+| `--busco_lineage` | Path to the BUSCO lineage database. | `busco_downloads/lineages/primates_odb10` |
 
 ### Input Options
 | Parameter | Description | Default |
 |---|---|---|
-| `--input_type` | Type of input data. Options: `short`, `long`, `hybrid`, `assembly_only`. | `hybrid` |
+| `--input_type` | Type of input data. Options: `short`, `long`, `hybrid`. | `hybrid` |
 | `--single_end` | Whether the short reads are single-end. | `true` |
 | `--stranded` | Whether the data is strand-specific. This affects the SQANTI3 analysis. | `false` |
 | `--long_read_tech` | Long read technology. Options: `ont`, `hifi`. | `ont` |
